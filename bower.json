@@ -17,5 +17,9 @@
     "app/scripts/lib/",
     "test",
     "tests"
-  ]
+  ],
+  "dependencies": {
+    "jquery": "latest",
+    "underscore": "latest"
+  }
 }
