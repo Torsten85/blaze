@@ -1,0 +1,21 @@
+{
+  "name": "Blaze",
+  "main": "blaze.js",
+  "version": "0.0.1",
+  "authors": [
+    "Torsten Blindert"
+  ],
+  "description": "Port of Meteor Blaze",
+  "keywords": [
+    "Blaze"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "app/scripts/lib/",
+    "test",
+    "tests"
+  ]
+}
