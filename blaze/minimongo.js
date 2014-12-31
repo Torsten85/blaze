@@ -1,8 +1,13 @@
 define(function (require) {
 
   var EJSON = require('./ejson');
+  var Random = require('./random');
 
   var LocalCollection = {};
+
+  LocalCollection._looksLikeObjectID = function (str) {
+    return str.length === 24 && str.match(/^[0-9a-f]*$/);
+  };
 
   LocalCollection._idStringify = function (id) {
     if (typeof id === 'string') {
@@ -22,6 +27,19 @@ define(function (require) {
       throw new Error("Meteor does not currently support objects other than ObjectID as ids");
     } else {
       return "~" + JSON.stringify(id);
+    }
+  };
+
+  LocalCollection._ObjectID = function (hexString) {
+    var self = this;
+    if (hexString) {
+      hexString = hexString.toLowerCase();
+      if (!LocalCollection._looksLikeObjectID(hexString)) {
+        throw new Error("Invalid hexadecimal string for creating an ObjectID");
+      }
+      self._str = hexString;
+    } else {
+      self._str = Random.hexString(24);
     }
   };
 
