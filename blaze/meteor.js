@@ -748,6 +748,245 @@ _.extend(Meteor._SynchronousQueue.prototype, {                                  
 
 
 
+
+
+
+
+(function () {
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                        //
+// packages/meteor/debug.js                                                                               //
+//                                                                                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                                                                          //
+var suppress = 0;                                                                                         // 1
+                                                                                                          // 2
+// replacement for console.log. This is a temporary API. We should                                        // 3
+// provide a real logging API soon (possibly just a polyfill for                                          // 4
+// console?)                                                                                              // 5
+//                                                                                                        // 6
+// NOTE: this is used on the server to print the warning about                                            // 7
+// having autopublish enabled when you probably meant to turn it                                          // 8
+// off. it's not really the proper use of something called                                                // 9
+// _debug. the intent is for this message to go to the terminal and                                       // 10
+// be very visible. if you change _debug to go someplace else, etc,                                       // 11
+// please fix the autopublish code to do something reasonable.                                            // 12
+//                                                                                                        // 13
+Meteor._debug = function (/* arguments */) {                                                              // 14
+  if (suppress) {                                                                                         // 15
+    suppress--;                                                                                           // 16
+    return;                                                                                               // 17
+  }                                                                                                       // 18
+  if (typeof console !== 'undefined' &&                                                                   // 19
+      typeof console.log !== 'undefined') {                                                               // 20
+    if (arguments.length == 0) { // IE Companion breaks otherwise                                         // 21
+      // IE10 PP4 requires at least one argument                                                          // 22
+      console.log('');                                                                                    // 23
+    } else {                                                                                              // 24
+      // IE doesn't have console.log.apply, it's not a real Object.                                       // 25
+      // http://stackoverflow.com/questions/5538972/console-log-apply-not-working-in-ie9                  // 26
+      // http://patik.com/blog/complete-cross-browser-console-log/                                        // 27
+      if (typeof console.log.apply === "function") {                                                      // 28
+        // Most browsers                                                                                  // 29
+                                                                                                          // 30
+        // Chrome and Safari only hyperlink URLs to source files in first argument of                     // 31
+        // console.log, so try to call it with one argument if possible.                                  // 32
+        // Approach taken here: If all arguments are strings, join them on space.                         // 33
+        // See https://github.com/meteor/meteor/pull/732#issuecomment-13975991                            // 34
+        var allArgumentsOfTypeString = true;                                                              // 35
+        for (var i = 0; i < arguments.length; i++)                                                        // 36
+          if (typeof arguments[i] !== "string")                                                           // 37
+            allArgumentsOfTypeString = false;                                                             // 38
+                                                                                                          // 39
+        if (allArgumentsOfTypeString)                                                                     // 40
+          console.log.apply(console, [Array.prototype.join.call(arguments, " ")]);                        // 41
+        else                                                                                              // 42
+          console.log.apply(console, arguments);                                                          // 43
+                                                                                                          // 44
+      } else if (typeof Function.prototype.bind === "function") {                                         // 45
+        // IE9                                                                                            // 46
+        var log = Function.prototype.bind.call(console.log, console);                                     // 47
+        log.apply(console, arguments);                                                                    // 48
+      } else {                                                                                            // 49
+        // IE8                                                                                            // 50
+        Function.prototype.call.call(console.log, console, Array.prototype.slice.call(arguments));        // 51
+      }                                                                                                   // 52
+    }                                                                                                     // 53
+  }                                                                                                       // 54
+};                                                                                                        // 55
+                                                                                                          // 56
+// Suppress the next 'count' Meteor._debug messsages. Use this to                                         // 57
+// stop tests from spamming the console.                                                                  // 58
+//                                                                                                        // 59
+Meteor._suppress_log = function (count) {                                                                 // 60
+  suppress += count;                                                                                      // 61
+};                                                                                                        // 62
+                                                                                                          // 63
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}).call(this);
+
+
+
+
+
+
+(function () {
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                        //
+// packages/meteor/dynamics_browser.js                                                                    //
+//                                                                                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                                                                          //
+// Simple implementation of dynamic scoping, for use in browsers                                          // 1
+                                                                                                          // 2
+var nextSlot = 0;                                                                                         // 3
+var currentValues = [];                                                                                   // 4
+                                                                                                          // 5
+Meteor.EnvironmentVariable = function () {                                                                // 6
+  this.slot = nextSlot++;                                                                                 // 7
+};                                                                                                        // 8
+                                                                                                          // 9
+_.extend(Meteor.EnvironmentVariable.prototype, {                                                          // 10
+  get: function () {                                                                                      // 11
+    return currentValues[this.slot];                                                                      // 12
+  },                                                                                                      // 13
+                                                                                                          // 14
+  getOrNullIfOutsideFiber: function () {                                                                  // 15
+    return this.get();                                                                                    // 16
+  },                                                                                                      // 17
+                                                                                                          // 18
+  withValue: function (value, func) {                                                                     // 19
+    var saved = currentValues[this.slot];                                                                 // 20
+    try {                                                                                                 // 21
+      currentValues[this.slot] = value;                                                                   // 22
+      var ret = func();                                                                                   // 23
+    } finally {                                                                                           // 24
+      currentValues[this.slot] = saved;                                                                   // 25
+    }                                                                                                     // 26
+    return ret;                                                                                           // 27
+  }                                                                                                       // 28
+});                                                                                                       // 29
+                                                                                                          // 30
+Meteor.bindEnvironment = function (func, onException, _this) {                                            // 31
+  // needed in order to be able to create closures inside func and                                        // 32
+  // have the closed variables not change back to their original                                          // 33
+  // values                                                                                               // 34
+  var boundValues = _.clone(currentValues);                                                               // 35
+                                                                                                          // 36
+  if (!onException || typeof(onException) === 'string') {                                                 // 37
+    var description = onException || "callback of async function";                                        // 38
+    onException = function (error) {                                                                      // 39
+      Meteor._debug(                                                                                      // 40
+        "Exception in " + description + ":",                                                              // 41
+        error && error.stack || error                                                                     // 42
+      );                                                                                                  // 43
+    };                                                                                                    // 44
+  }                                                                                                       // 45
+                                                                                                          // 46
+  return function (/* arguments */) {                                                                     // 47
+    var savedValues = currentValues;                                                                      // 48
+    try {                                                                                                 // 49
+      currentValues = boundValues;                                                                        // 50
+      var ret = func.apply(_this, _.toArray(arguments));                                                  // 51
+    } catch (e) {                                                                                         // 52
+      // note: callback-hook currently relies on the fact that if onException                             // 53
+      // throws in the browser, the wrapped call throws.                                                  // 54
+      onException(e);                                                                                     // 55
+    } finally {                                                                                           // 56
+      currentValues = savedValues;                                                                        // 57
+    }                                                                                                     // 58
+    return ret;                                                                                           // 59
+  };                                                                                                      // 60
+};                                                                                                        // 61
+                                                                                                          // 62
+Meteor._nodeCodeMustBeInFiber = function () {                                                             // 63
+  // no-op on browser                                                                                     // 64
+};                                                                                                        // 65
+                                                                                                          // 66
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}).call(this);
+
+
+
+
+
+
+(function () {
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//                                                                                                        //
+// packages/meteor/url_common.js                                                                          //
+//                                                                                                        //
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                                                                                                          //
+/**                                                                                                       // 1
+ * @summary Generate an absolute URL pointing to the application. The server reads from the `ROOT_URL` environment variable to determine where it is running. This is taken care of automatically for apps deployed with `meteor deploy`, but must be provided when using `meteor build`.
+ * @locus Anywhere                                                                                        // 3
+ * @param {String} [path] A path to append to the root URL. Do not include a leading "`/`".               // 4
+ * @param {Object} [options]                                                                              // 5
+ * @param {Boolean} options.secure Create an HTTPS URL.                                                   // 6
+ * @param {Boolean} options.replaceLocalhost Replace localhost with 127.0.0.1. Useful for services that don't recognize localhost as a domain name.
+ * @param {String} options.rootUrl Override the default ROOT_URL from the server environment. For example: "`http://foo.example.com`"
+ */                                                                                                       // 9
+Meteor.absoluteUrl = function (path, options) {                                                           // 10
+  // path is optional                                                                                     // 11
+  if (!options && typeof path === 'object') {                                                             // 12
+    options = path;                                                                                       // 13
+    path = undefined;                                                                                     // 14
+  }                                                                                                       // 15
+  // merge options with defaults                                                                          // 16
+  options = _.extend({}, Meteor.absoluteUrl.defaultOptions, options || {});                               // 17
+                                                                                                          // 18
+  var url = options.rootUrl;                                                                              // 19
+  if (!url)                                                                                               // 20
+    throw new Error("Must pass options.rootUrl or set ROOT_URL in the server environment");               // 21
+                                                                                                          // 22
+  if (!/^http[s]?:\/\//i.test(url)) // url starts with 'http://' or 'https://'                            // 23
+    url = 'http://' + url; // we will later fix to https if options.secure is set                         // 24
+                                                                                                          // 25
+  if (!/\/$/.test(url)) // url ends with '/'                                                              // 26
+    url += '/';                                                                                           // 27
+                                                                                                          // 28
+  if (path)                                                                                               // 29
+    url += path;                                                                                          // 30
+                                                                                                          // 31
+  // turn http to https if secure option is set, and we're not talking                                    // 32
+  // to localhost.                                                                                        // 33
+  if (options.secure &&                                                                                   // 34
+      /^http:/.test(url) && // url starts with 'http:'                                                    // 35
+      !/http:\/\/localhost[:\/]/.test(url) && // doesn't match localhost                                  // 36
+      !/http:\/\/127\.0\.0\.1[:\/]/.test(url)) // or 127.0.0.1                                            // 37
+    url = url.replace(/^http:/, 'https:');                                                                // 38
+                                                                                                          // 39
+  if (options.replaceLocalhost)                                                                           // 40
+    url = url.replace(/^http:\/\/localhost([:\/].*)/, 'http://127.0.0.1$1');                              // 41
+                                                                                                          // 42
+  return url;                                                                                             // 43
+};                                                                                                        // 44
+                                                                                                          // 45
+// allow later packages to override default options                                                       // 46
+Meteor.absoluteUrl.defaultOptions = { };                                                                  // 47
+if (typeof __meteor_runtime_config__ === "object" &&                                                      // 48
+    __meteor_runtime_config__.ROOT_URL)                                                                   // 49
+  Meteor.absoluteUrl.defaultOptions.rootUrl = __meteor_runtime_config__.ROOT_URL;                         // 50
+                                                                                                          // 51
+                                                                                                          // 52
+Meteor._relativeToSiteRootUrl = function (link) {                                                         // 53
+  if (typeof __meteor_runtime_config__ === "object" &&                                                    // 54
+      link.substr(0, 1) === "/")                                                                          // 55
+    link = (__meteor_runtime_config__.ROOT_URL_PATH_PREFIX || "") + link;                                 // 56
+  return link;                                                                                            // 57
+};                                                                                                        // 58
+                                                                                                          // 59
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+}).call(this);
+
+
 return Meteor;
 
 });
