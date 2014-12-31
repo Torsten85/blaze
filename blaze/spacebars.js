@@ -21,6 +21,8 @@ define(function (require) {
 
 
 
+var Tracker = require('./tracker');
+var Deps = Tracker._Deps;
 var Meteor = require('./meteor');
 var HTML = require('./htmljs');
 var Blaze = require('../blaze');
