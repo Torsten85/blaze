@@ -201,5 +201,43 @@ define(function (require) {
     });
   };
 
+  LocalCollection._makeChangedFields = function (newDoc, oldDoc) {
+    var fields = {};
+    LocalCollection._diffObjects(oldDoc, newDoc, {
+      leftOnly: function (key, value) {
+        fields[key] = undefined;
+      },
+      rightOnly: function (key, value) {
+        fields[key] = value;
+      },
+      both: function (key, leftValue, rightValue) {
+        if (!EJSON.equals(leftValue, rightValue))
+          fields[key] = rightValue;
+      }
+    });
+    return fields;
+  };
+
+  // General helper for diff-ing two objects.
+  // callbacks is an object like so:
+  // { leftOnly: function (key, leftValue) {...},
+  //   rightOnly: function (key, rightValue) {...},
+  //   both: function (key, leftValue, rightValue) {...},
+  // }
+  LocalCollection._diffObjects = function (left, right, callbacks) {
+    _.each(left, function (leftValue, key) {
+      if (_.has(right, key))
+        callbacks.both && callbacks.both(key, leftValue, right[key]);
+      else
+        callbacks.leftOnly && callbacks.leftOnly(key, leftValue);
+    });
+    if (callbacks.rightOnly) {
+      _.each(right, function(rightValue, key) {
+        if (!_.has(left, key))
+          callbacks.rightOnly(key, rightValue);
+      });
+    }
+  };
+
   return LocalCollection;
 });
