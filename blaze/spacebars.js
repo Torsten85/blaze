@@ -21,15 +21,16 @@ define(function (require) {
 
 
 
-var Tracker = require('./tracker');
-var Deps = Tracker._Deps;
 var Meteor = require('./meteor');
 var HTML = require('./htmljs');
+var Tracker = require('./tracker');
+var Deps = Tracker._Deps;
 var Blaze = require('../blaze');
 var UI = Blaze._UI;
 var Handlebars = Blaze._Handlebars;
 var ObserveSequence = require('./observe-sequence');
 var Template = require('./templating');
+var _ = require('underscore');
 /* Package-scope variables */
 var Spacebars;
 
@@ -340,7 +341,7 @@ Spacebars.TemplateWith = Blaze._TemplateWith;                                   
 Template.__checkName("__dynamic");                                                                     // 2
 Template["__dynamic"] = new Template("Template.__dynamic", (function() {                               // 3
   var view = this;                                                                                     // 4
-  return [ Blaze.View(function() {                                                                     // 5
+  return [ Blaze.View("lookup:checkContext", function() {                                              // 5
     return Spacebars.mustache(view.lookup("checkContext"));                                            // 6
   }), "\n  ", Blaze.If(function() {                                                                    // 7
     return Spacebars.call(view.lookup("dataContextPresent"));                                          // 8

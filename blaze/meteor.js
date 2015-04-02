@@ -53,19 +53,20 @@ Meteor = {                                                                      
    * @static                                                                                              // 18
    * @type {Boolean}                                                                                      // 19
    */                                                                                                     // 20
-  isServer: false                                                                                         // 21
-};                                                                                                        // 22
-                                                                                                          // 23
-if (typeof __meteor_runtime_config__ === 'object' &&                                                      // 24
-    __meteor_runtime_config__.PUBLIC_SETTINGS) {                                                          // 25
-  /**                                                                                                     // 26
+  isServer: false,                                                                                        // 21
+  isCordova: false                                                                                        // 22
+};                                                                                                        // 23
+                                                                                                          // 24
+if (typeof __meteor_runtime_config__ === 'object' &&                                                      // 25
+    __meteor_runtime_config__.PUBLIC_SETTINGS) {                                                          // 26
+  /**                                                                                                     // 27
    * @summary `Meteor.settings` contains deployment-specific configuration options. You can initialize settings by passing the `--settings` option (which takes the name of a file containing JSON data) to `meteor run` or `meteor deploy`. When running your server directly (e.g. from a bundle), you instead specify settings by putting the JSON directly into the `METEOR_SETTINGS` environment variable. If you don't provide any settings, `Meteor.settings` will be an empty object.  If the settings object contains a key named `public`, then `Meteor.settings.public` will be available on the client as well as the server.  All other properties of `Meteor.settings` are only defined on the server.
-   * @locus Anywhere                                                                                      // 28
-   * @type {Object}                                                                                       // 29
-   */                                                                                                     // 30
-  Meteor.settings = { 'public': __meteor_runtime_config__.PUBLIC_SETTINGS };                              // 31
-}                                                                                                         // 32
-                                                                                                          // 33
+   * @locus Anywhere                                                                                      // 29
+   * @type {Object}                                                                                       // 30
+   */                                                                                                     // 31
+  Meteor.settings = { 'public': __meteor_runtime_config__.PUBLIC_SETTINGS };                              // 32
+}                                                                                                         // 33
+                                                                                                          // 34
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }).call(this);
@@ -823,6 +824,11 @@ Meteor._suppress_log = function (count) {                                       
   suppress += count;                                                                                      // 61
 };                                                                                                        // 62
                                                                                                           // 63
+Meteor._supressed_log_expected = function () {                                                            // 64
+  return suppress !== 0;                                                                                  // 65
+};                                                                                                        // 66
+                                                                                                          // 67
+                                                                                                          // 68
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 }).call(this);
