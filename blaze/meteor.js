@@ -21,6 +21,7 @@ define(function (require) {
 
 
 
+var jQuery = require('jquery');
 var _ = require('underscore');
 /* Package-scope variables */
 var Meteor;
@@ -992,6 +993,9 @@ Meteor._relativeToSiteRootUrl = function (link) {                               
 
 }).call(this);
 
+
+
+Meteor.startup = function (fct) { jQuery(fct); };
 
 return Meteor;
 
