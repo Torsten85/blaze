@@ -21,14 +21,14 @@ define(function (require) {
 
 
 
-var Meteor = require('./blaze/meteor');
+var Meteor = require('./meteor');
 var jQuery = require('jquery');
-var Tracker = require('./blaze/tracker');
+var Tracker = require('./tracker');
 var Deps = Tracker._Deps;
 var _ = require('underscore');
-var HTML = require('./blaze/htmljs');
-var ObserveSequence = require('./blaze/observe-sequence');
-var ReactiveVar = require('./blaze/reactive-var');
+var HTML = require('./htmljs');
+var ObserveSequence = require('./observe-sequence');
+var ReactiveVar = require('./reactive-var');
 /* Package-scope variables */
 var Blaze, UI, Handlebars, AttributeHandler, makeAttributeHandler, ElementAttributesUpdater;
 
