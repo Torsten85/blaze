@@ -25,6 +25,8 @@ var Meteor = require('./meteor');
 var Tracker = require('./tracker');
 var Deps = Tracker._Deps;
 var LocalCollection = require('./minimongo');
+var Minimongo = LocalCollection._Minimongo;
+var MinimongoTest = LocalCollection._MinimongoTest;
 var _ = require('underscore');
 var Random = require('./random');
 /* Package-scope variables */

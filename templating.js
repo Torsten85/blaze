@@ -23,7 +23,7 @@ define(function (require) {
 
 var Meteor = require('./meteor');
 var _ = require('underscore');
-var Blaze = require('../blaze');
+var Blaze = require('./main');
 var UI = Blaze._UI;
 var Handlebars = Blaze._Handlebars;
 var HTML = require('./htmljs');
